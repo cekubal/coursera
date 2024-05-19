@@ -1,0 +1,145 @@
+import pandas as pd
+
+# Load data from a CSV file
+data = pd.read_csv('data.csv')
+
+# Display the first few rows of the dataframe
+print(data.head())
+
+# Data cleaning: handling missing values
+data.dropna(inplace=True)
+
+# Data transformation: converting categorical data to numerical data
+data['category'] = data['category'].astype('category')
+data['category'] = data['category'].cat.codes
+
+# Feature engineering: creating new features
+data['total_price'] = data['quantity'] * data['price_per_unit']
+
+# Display cleaned data
+print(data.head())
+
+
+###########EDA
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Descriptive statistics
+print(data.describe())
+
+# Correlation matrix
+correlation_matrix = data.corr()
+print(correlation_matrix)
+
+# Heatmap of the correlation matrix
+plt.figure(figsize=(10, 8))
+sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm')
+plt.title('Correlation Matrix Heatmap')
+plt.show()
+
+# Distribution plots
+sns.histplot(data['total_price'], kde=True)
+plt.title('Total Price Distribution')
+plt.xlabel('Total Price')
+plt.ylabel('Frequency')
+plt.show()
+
+# Scatter plot
+sns.scatterplot(x='quantity', y='total_price', data=data)
+plt.title('Quantity vs Total Price')
+plt.xlabel('Quantity')
+plt.ylabel('Total Price')
+plt.show()
+
+####SQL Query for EDA
+import sqlite3
+
+# Create an in-memory SQLite database
+conn = sqlite3.connect(':memory:')
+
+# Load data into the database
+data.to_sql('sales_data', conn, index=False, if_exists='replace')
+
+# Run a SQL query
+query = '''
+SELECT category, SUM(total_price) as total_sales
+FROM sales_data
+GROUP BY category
+ORDER BY total_sales DESC
+'''
+result = pd.read_sql(query, conn)
+
+# Display the result
+print(result)
+
+#######Interactive Map with Folium
+import folium
+
+# Create a base map
+m = folium.Map(location=[37.7749, -122.4194], zoom_start=12)
+
+# Add a marker
+folium.Marker(
+    location=[37.7749, -122.4194],
+    popup='San Francisco',
+    icon=folium.Icon(color='blue', icon='info-sign')
+).add_to(m)
+
+# Save the map as an HTML file
+m.save('map.html')
+
+
+
+import dash
+import dash_core_components as dcc
+import dash_html_components as html
+import plotly.express as px
+
+# Sample data for the dashboard
+data = {
+    'Category': ['A', 'B', 'C', 'D'],
+    'Values': [10, 20, 30, 40]
+}
+
+# Create a Dash app
+app = dash.Dash(__name__)
+
+# Define the layout of the app
+app.layout = html.Div(children=[
+    html.H1(children='Sample Dashboard'),
+
+    dcc.Graph(
+        id='bar-chart',
+        figure=px.bar(data, x='Category', y='Values', title='Category Values')
+    )
+])
+
+# Run the app
+if __name__ == '__main__':
+    app.run_server(debug=True)
+
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score, classification_report
+
+# Split the data into training and testing sets
+X = data[['quantity', 'price_per_unit', 'total_price']]
+y = data['category']
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Train a Random Forest classifier
+model = RandomForestClassifier(n_estimators=100, random_state=42)
+model.fit(X_train, y_train)
+
+# Make predictions
+y_pred = model.predict(X_test)
+
+# Evaluate the model
+accuracy = accuracy_score(y_test, y_pred)
+report = classification_report(y_test, y_pred)
+
+print(f'Accuracy: {accuracy}')
+print('Classification Report:')
+print(report)
+
+
